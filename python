@@ -1,0 +1,53 @@
+import tkinter as tk
+import random
+import time
+
+class DigitSpanTest(tk.Tk):
+    def __init__(self):
+        super().__init__()
+
+        self.title("Digit Span Test")
+        self.geometry("400x200")
+
+        self.current_numbers = []
+        self.level = 3  # 初始数字个数
+        self.start_button = tk.Button(self, text="Start Test", command=self.start_test)
+        self.start_button.pack(pady=20)
+
+        self.number_label = tk.Label(self, text="", font=("Arial", 24))
+        self.number_label.pack(pady=20)
+
+        self.entry = tk.Entry(self)
+        self.entry.pack(pady=20, padx=20)
+
+        self.submit_button = tk.Button(self, text="Submit", command=self.check_answer, state=tk.DISABLED)
+        self.submit_button.pack(pady=20)
+        self.protocol("WM_DELETE_WINDOW", self.on_closing)
+
+    def start_test(self):
+        self.entry.delete(0, tk.END)
+        self.number_label.config(text="")
+        self.current_numbers = [str(random.randint(1, 9)) for _ in range(self.level)]
+        self.start_button.config(state=tk.DISABLED)
+        self.submit_button.config(state=tk.DISABLED)
+        self.update()
+        self.number_label.config(text=" ".join(self.current_numbers))
+        self.after(1000 * self.level, self.clear_number)
+
+    def clear_number(self):
+        self.number_label.config(text="")
+        self.submit_button.config(state=tk.NORMAL)
+
+    def check_answer(self):
+        user_input = self.entry.get()
+        if user_input == "".join(self.current_numbers):
+            self.level += 1
+        self.start_button.config(state=tk.NORMAL)
+        self.submit_button.config(state=tk.DISABLED)
+
+    def on_closing(self):
+        self.destroy()
+
+if __name__ == "__main__":
+    app = DigitSpanTest()
+    app.mainloop()
