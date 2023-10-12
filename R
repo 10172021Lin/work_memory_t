@@ -1,0 +1,62 @@
+install.packages("shiny")
+library(shiny)
+
+ui <- fluidPage(
+  titlePanel("Digit Span Test"),
+  mainPanel(
+    actionButton("startBtn", "Start Test"),
+    textOutput("numberOutput"),
+    numericInput("numberInput", "Input the number", value = NULL),
+    actionButton("submitBtn", "Submit"),
+    textOutput("feedbackOutput"),
+    tableOutput("resultsTable")
+  )
+)
+
+server <- function(input, output, session) {
+  numbers <- reactiveVal(NULL)
+  len <- reactiveVal(3)
+  correct <- reactiveVal(0)
+  startTime <- reactiveVal(NULL)
+  endTime <- reactiveVal(NULL)
+  results <- reactiveVal(data.frame(Trial = integer(0), Correct = integer(0), ReactionTime = numeric(0)))
+  
+  observeEvent(input$startBtn, {
+    numbers(sample(1:9, len(), replace = TRUE))
+    output$numberOutput <- renderText({
+      paste(numbers(), collapse = "")
+    })
+    startTime(Sys.time())
+    invalidateLater(1000 * len(), session)
+  })
+  
+  observe({
+    if(is.null(numbers())) return(NULL)
+    if(Sys.time() - startTime() > len()) {
+      numbers(NULL)
+      output$numberOutput <- renderText("Please input the number")
+    }
+  })
+  
+  observeEvent(input$submitBtn, {
+    if(is.null(numbers())) return(NULL)
+    user_input <- as.integer(strsplit(as.character(input$numberInput), NULL)[[1]])
+    if(all(user_input == numbers())) {
+      correct(correct() + 1)
+      feedback <- "Correct!"
+    } else {
+      feedback <- "Incorrect."
+    }
+    endTime(Sys.time())
+    reactionTime <- difftime(endTime(), startTime(), units = "secs")
+    results(rbind(results(), data.frame(Trial = len() - 2, Correct = correct(), ReactionTime = as.numeric(reactionTime))))
+    len(len() + 1)
+    numbers(NULL)
+    output$feedbackOutput <- renderText(feedback)
+    output$resultsTable <- renderTable({
+      results()
+    })
+  })
+}
+
+shinyApp(ui, server)
